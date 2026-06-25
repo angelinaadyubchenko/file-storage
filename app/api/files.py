@@ -6,7 +6,17 @@ from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import assert_storage_access, get_current_user, require_storage_grant
+from app.api.openapi import error_responses
 from app.db.session import get_db
+from app.exceptions import (
+    AuthenticationError,
+    FileNotFound,
+    FileTooLarge,
+    InvalidFileType,
+    PermissionDenied,
+    StorageNotFound,
+    StorageQuotaExceeded,
+)
 from app.models.enums import StorageGrantType
 from app.models.user import User
 from app.schemas.file import FileRead
@@ -25,6 +35,19 @@ def content_disposition(filename: str) -> str:
     "/storages/{storage_id}/files",
     response_model=FileRead,
     status_code=status.HTTP_201_CREATED,
+    summary="Загрузить файл",
+    description=(
+        "Загружает файл в хранилище. Проверяются размер файла, MIME-тип (по содержимому), "
+        "расширение и квота хранилища. Требуется право STORAGE_WRITE."
+    ),
+    responses=error_responses(
+        AuthenticationError,
+        PermissionDenied,
+        StorageNotFound,
+        FileTooLarge,
+        StorageQuotaExceeded,
+        InvalidFileType,
+    ),
 )
 async def upload_file(
     storage_id: uuid.UUID,
@@ -36,7 +59,13 @@ async def upload_file(
     return file_row
 
 
-@router.get("/storages/{storage_id}/files", response_model=list[FileRead])
+@router.get(
+    "/storages/{storage_id}/files",
+    response_model=list[FileRead],
+    summary="Список файлов хранилища",
+    description="Возвращает активные (неудалённые) файлы хранилища. Требуется право STORAGE_READ.",
+    responses=error_responses(AuthenticationError, PermissionDenied, StorageNotFound),
+)
 async def list_files(
     storage_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -45,7 +74,15 @@ async def list_files(
     return await file_service.list_active_files(db, storage_id)
 
 
-@router.get("/files/{file_id}/download")
+@router.get(
+    "/files/{file_id}/download",
+    summary="Скачать файл",
+    description=(
+        "Отдаёт содержимое файла. Требуется право STORAGE_READ на хранилище, "
+        "которому принадлежит файл."
+    ),
+    responses=error_responses(AuthenticationError, PermissionDenied, FileNotFound),
+)
 async def download_file(
     file_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -65,7 +102,13 @@ async def download_file(
     )
 
 
-@router.delete("/files/{file_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/files/{file_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Удалить файл",
+    description="Мягко удаляет файл (помечает удалённым, файл перестаёт быть доступен). Требуется право STORAGE_DELETE.",
+    responses=error_responses(AuthenticationError, PermissionDenied, FileNotFound),
+)
 async def delete_file(
     file_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),

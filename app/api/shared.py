@@ -6,7 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import assert_storage_access, get_current_user
 from app.api.files import content_disposition
+from app.api.openapi import error_responses
 from app.db.session import get_db
+from app.exceptions import AuthenticationError, FileNotFound, PermissionDenied, ShareTokenInvalid
 from app.models.enums import StorageGrantType
 from app.models.user import User
 from app.schemas.share import ShareTokenCreate, ShareTokenRead
@@ -19,6 +21,12 @@ router = APIRouter(tags=["share"])
     "/files/{file_id}/share",
     response_model=ShareTokenRead,
     status_code=status.HTTP_201_CREATED,
+    summary="Создать ссылку на файл",
+    description=(
+        "Создаёт временную публичную ссылку на конкретный файл с ограничением по времени "
+        "и (опционально) по числу скачиваний. Требуется право STORAGE_MANAGE_ACCESS."
+    ),
+    responses=error_responses(AuthenticationError, PermissionDenied, FileNotFound),
 )
 async def create_share(
     file_id: uuid.UUID,
@@ -40,7 +48,15 @@ async def create_share(
     return share
 
 
-@router.get("/shared/{token}")
+@router.get(
+    "/shared/{token}",
+    summary="Скачать по ссылке",
+    description=(
+        "Публичное скачивание файла по токену без авторизации. Невалидный, просроченный "
+        "или исчерпанный токен возвращает 404 (без раскрытия причины)."
+    ),
+    responses=error_responses(ShareTokenInvalid),
+)
 async def download_shared(token: str, db: AsyncSession = Depends(get_db)) -> FileResponse:
     share, file_row = await share_service.resolve_and_consume_token(db, token)
     return FileResponse(
@@ -50,7 +66,13 @@ async def download_shared(token: str, db: AsyncSession = Depends(get_db)) -> Fil
     )
 
 
-@router.delete("/files/{file_id}/share/{token}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/files/{file_id}/share/{token}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Отозвать ссылку",
+    description="Делает ссылку на файл недействительной. Требуется право STORAGE_MANAGE_ACCESS.",
+    responses=error_responses(AuthenticationError, PermissionDenied, FileNotFound, ShareTokenInvalid),
+)
 async def revoke_share(
     file_id: uuid.UUID,
     token: str,
