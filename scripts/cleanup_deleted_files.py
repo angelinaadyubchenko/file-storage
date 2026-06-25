@@ -26,7 +26,7 @@ async def cleanup_deleted_files(retention_days: int | None = None) -> int:
             path = absolute_path_for(file_row)
             try:
                 path.unlink(missing_ok=True)
-            except OSError as exc:  # pragma: no cover - defensive
+            except OSError as exc:  
                 audit.warning("cleanup_failed file_id=%s path=%s err=%s", file_row.id, path, exc)
                 continue
             await db.delete(file_row)
