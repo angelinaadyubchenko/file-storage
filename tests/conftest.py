@@ -97,6 +97,17 @@ def user_factory(client):
 
 
 @pytest_asyncio.fixture
+async def admin_headers(client):
+    await client.post(
+        "/auth/register", json={"email": settings.ADMIN_EMAIL, "password": "password123"}
+    )
+    login = await client.post(
+        "/auth/login", json={"email": settings.ADMIN_EMAIL, "password": "password123"}
+    )
+    return {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+
+@pytest_asyncio.fixture
 async def grant_global():
 
     async def _grant(user_id: str, grant_type: GlobalGrantType):

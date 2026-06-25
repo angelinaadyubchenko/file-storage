@@ -66,3 +66,13 @@ async def test_owner_can_update_policy(client, user_factory):
     )
     assert resp.status_code == 200
     assert resp.json()["max_file_size"] == 12345
+
+
+async def test_owner_can_rename_storage(client, user_factory):
+    user = await user_factory()
+    sid = user["personal_storage_id"]
+    resp = await client.patch(
+        f"/storages/{sid}", json={"name": "Renamed"}, headers=user["headers"]
+    )
+    assert resp.status_code == 200
+    assert resp.json()["name"] == "Renamed"

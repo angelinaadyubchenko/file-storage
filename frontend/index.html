@@ -67,6 +67,11 @@
     background:var(--surface); border:1px solid var(--line); border-radius:var(--r-xl);
     padding:26px 28px; margin-bottom:20px; box-shadow:var(--sh-sm);
   }
+  .card.highlight {
+    background:var(--accent-weak); border-color:var(--accent);
+    border-left:4px solid var(--accent); box-shadow:var(--sh-md);
+  }
+  .card.highlight h2 { color:var(--accent-dark); }
   .card-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:18px; }
   h2 { font-size:12px; margin:0; color:var(--text-2); text-transform:uppercase; letter-spacing:.09em; font-weight:600; }
   h3 { margin:0; font-size:22px; font-weight:600; letter-spacing:-.02em; }
@@ -256,7 +261,7 @@
       <div class="sub" id="gHint" style="margin-top:10px;">Личное хранилище может создать любой. Для общего нужно право на создание общих хранилищ.</div>
     </div>
 
-    <div id="requestCard" class="card hidden">
+    <div id="requestCard" class="card highlight hidden">
       <div class="card-head"><h2>Право на создание общих хранилищ</h2></div>
       <div class="sub" id="requestStatus"></div>
       <div class="actions-row" style="margin-top:12px;"><button id="requestBtn" onclick="requestAccess(this)">Запросить право</button></div>
@@ -277,7 +282,15 @@
   <section id="storageScreen" class="hidden">
     <div class="card">
       <button class="link back" onclick="goto('dashboard')">К списку хранилищ</button>
-      <h3 id="stName"></h3>
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <h3 id="stName"></h3>
+        <button id="renameBtn" class="link hidden" onclick="startRename()">Переименовать</button>
+      </div>
+      <div id="renameRow" class="toolbar hidden" style="margin-top:10px;">
+        <div class="field"><input id="renameInput" maxlength="255" placeholder="Новое название"></div>
+        <button onclick="saveRename(this)">Сохранить</button>
+        <button class="ghost" onclick="cancelRename()">Отмена</button>
+      </div>
       <div class="idline"><span id="stType" class="pill"></span><span class="mono" id="stId"></span></div>
       <div class="sub" id="stRole" style="margin-top:8px;"></div>
       <div class="sub" id="stUsage" style="margin-top:12px;"></div>
@@ -592,6 +605,7 @@ async function openStorage(id) {
     $("stType").textContent = typeLabel(s.type);
     $("stId").textContent = s.id;
     renderUsage();
+    renderGrantOptions();
     const p = s.policy || {};
     $("pFile").value = p.max_file_size || "";
     $("pStore").value = p.max_storage_size || "";
@@ -601,6 +615,9 @@ async function openStorage(id) {
     $("stRole").textContent = mg.is_owner
       ? "Ваша роль: владелец (полный доступ)"
       : "Ваши права: " + (mg.grants.join(", ") || "—");
+    const canManage = mg.is_owner || mg.grants.includes("STORAGE_MANAGE_ACCESS");
+    $("renameBtn").classList.toggle("hidden", !canManage);
+    $("renameRow").classList.add("hidden");
     tab("Files");
     goto("storageScreen");
     await loadFiles();
@@ -614,6 +631,36 @@ function renderUsage() {
   const pct = max ? Math.min(100, used / max * 100) : 0;
   $("stUsage").textContent = "Занято " + fmtSize(used) + " из " + fmtSize(max);
   $("stBar").style.width = pct + "%";
+}
+
+function renderGrantOptions() {
+  const all = [
+    ["STORAGE_READ", "Чтение и скачивание"],
+    ["STORAGE_WRITE", "Загрузка"],
+    ["STORAGE_DELETE", "Удаление"],
+    ["STORAGE_MANAGE_ACCESS", "Управление доступом"],
+  ];
+  const opts = state.storage.type === "personal" ? [all[0]] : all;
+  $("aType").innerHTML = opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
+}
+
+function startRename() {
+  $("renameInput").value = state.storage.name;
+  $("renameRow").classList.remove("hidden");
+  $("renameInput").focus();
+}
+
+function cancelRename() { $("renameRow").classList.add("hidden"); }
+
+async function saveRename(btn) {
+  const name = $("renameInput").value.trim();
+  if (!name) { toast("Введите название", "err"); return; }
+  await action(btn, async () => {
+    await api("/storages/" + state.storage.id, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
+    cancelRename();
+    toast("Хранилище переименовано", "ok");
+    await openStorage(state.storage.id);
+  });
 }
 
 function tab(name) {

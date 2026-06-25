@@ -59,6 +59,12 @@ class StorageCreate(BaseModel):
     policy: StoragePolicyUpdate | None = None
 
 
+class StorageRename(BaseModel):
+    model_config = ConfigDict(json_schema_extra={"example": {"name": "Мои документы"}})
+
+    name: str = Field(min_length=1, max_length=255)
+
+
 class StorageRead(BaseModel):
     model_config = ConfigDict(
         from_attributes=True,

@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import require_global_grant
+from app.api.deps import require_admin
 from app.api.openapi import error_responses
 from app.db.session import get_db
 from app.exceptions import AuthenticationError, GrantNotFound, NotFound, PermissionDenied
@@ -34,7 +34,7 @@ async def issue_global_grant(
     payload: GlobalGrantCreate,
     response: Response,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(require_global_grant(GlobalGrantType.CAN_MANAGE_USERS)),
+    admin: User = Depends(require_admin),
 ) -> GlobalGrantRead:
     grant, created = await grant_service.grant_global_access(
         db, user_id=payload.user_id, grant_type=payload.grant_type
@@ -55,6 +55,6 @@ async def revoke_global_grant(
     user_id: uuid.UUID = Query(...),
     grant_type: GlobalGrantType = Query(...),
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(require_global_grant(GlobalGrantType.CAN_MANAGE_USERS)),
+    admin: User = Depends(require_admin),
 ) -> None:
     await grant_service.revoke_global_access(db, user_id=user_id, grant_type=grant_type)

@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.api.openapi import error_responses
+from app.core.config import settings
 from app.db.session import get_db
 from app.exceptions import AuthenticationError, EmailAlreadyRegistered, InvalidCredentials
 from app.models.enums import GlobalGrantType
@@ -73,9 +74,7 @@ async def my_access(
     can_create = await grant_service.has_global_grant(
         db, user_id=current_user.id, grant_type=GlobalGrantType.CAN_CREATE_GLOBAL_STORAGE
     )
-    can_manage = await grant_service.has_global_grant(
-        db, user_id=current_user.id, grant_type=GlobalGrantType.CAN_MANAGE_USERS
-    )
+    can_manage = current_user.email == settings.ADMIN_EMAIL
     pending = await access_request_service.get_pending_request(
         db, current_user.id, GlobalGrantType.CAN_CREATE_GLOBAL_STORAGE
     )

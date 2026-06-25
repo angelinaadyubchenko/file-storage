@@ -4,8 +4,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging_config import get_audit_logger
-from app.exceptions import GrantNotFound, NotFound, PermissionDenied, StorageNotFound
-from app.models.enums import GlobalGrantType, StorageGrantType
+from app.exceptions import GrantNotFound, InvalidGrant, NotFound, PermissionDenied, StorageNotFound
+from app.models.enums import GlobalGrantType, StorageGrantType, StorageType
 from app.models.grant import GlobalGrant, StorageGrant
 from app.models.storage import Storage
 from app.models.user import User
@@ -50,6 +50,9 @@ async def grant_storage_access(
     storage = await db.get(Storage, storage_id)
     if storage is None:
         raise StorageNotFound()
+
+    if storage.type == StorageType.PERSONAL and grant_type != StorageGrantType.STORAGE_READ:
+        raise InvalidGrant("A personal storage can only be shared with read access")
 
     # Owner has full authority. A non-owner with STORAGE_MANAGE_ACCESS may invite
     # others as readers/writers/deleters, but must not be able to escalate: only

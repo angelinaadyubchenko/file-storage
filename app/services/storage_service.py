@@ -75,6 +75,14 @@ async def create_storage(
     return storage
 
 
+async def rename_storage(db: AsyncSession, storage_id: uuid.UUID, name: str) -> Storage:
+    storage = await get_storage_or_404(db, storage_id)
+    storage.name = name
+    await db.commit()
+    await db.refresh(storage, attribute_names=["policy"])
+    return storage
+
+
 async def update_policy(
     db: AsyncSession, storage_id: uuid.UUID, payload: StoragePolicyUpdate
 ) -> StoragePolicy:

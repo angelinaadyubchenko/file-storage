@@ -14,6 +14,7 @@ from app.schemas.storage import (
     StoragePolicyRead,
     StoragePolicyUpdate,
     StorageRead,
+    StorageRename,
 )
 from app.services import grant_service, storage_service
 
@@ -102,6 +103,27 @@ async def my_grants(
     is_owner = storage.owner_id == current_user.id
     grants = await grant_service.list_user_storage_grants(db, current_user.id, storage_id)
     return {"is_owner": is_owner, "grants": [g.grant_type.value for g in grants]}
+
+
+@router.patch(
+    "/{storage_id}",
+    response_model=StorageRead,
+    summary="Переименовать хранилище",
+    description=(
+        "Меняет название хранилища. Требуется право STORAGE_MANAGE_ACCESS "
+        "(владельцу доступно всегда)."
+    ),
+    responses=error_responses(AuthenticationError, PermissionDenied, StorageNotFound),
+)
+async def rename_storage(
+    storage_id: uuid.UUID,
+    payload: StorageRename,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_storage_grant(StorageGrantType.STORAGE_MANAGE_ACCESS)),
+) -> StorageRead:
+    storage = await storage_service.rename_storage(db, storage_id, payload.name)
+    used = await storage_service.get_used_bytes(db, storage_id)
+    return _to_read(storage, used_bytes=used)
 
 
 @router.put(

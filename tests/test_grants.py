@@ -1,4 +1,4 @@
-from app.models.enums import StorageGrantType
+from app.models.enums import GlobalGrantType, StorageGrantType
 
 from tests.helpers import TEXT_CONTENT, upload_text_file
 
@@ -68,10 +68,19 @@ async def _delegate_management(client, owner, sid, manager):
     assert resp.status_code == 201, resp.text
 
 
-async def test_manager_cannot_grant_rights_to_self(client, user_factory):
+async def _global_storage(client, owner, grant_global):
+    await grant_global(owner["id"], GlobalGrantType.CAN_CREATE_GLOBAL_STORAGE)
+    resp = await client.post(
+        "/storages", json={"name": "Team", "type": "global"}, headers=owner["headers"]
+    )
+    assert resp.status_code == 201, resp.text
+    return resp.json()["id"]
+
+
+async def test_manager_cannot_grant_rights_to_self(client, user_factory, grant_global):
     owner = await user_factory()
     manager = await user_factory()
-    sid = owner["personal_storage_id"]
+    sid = await _global_storage(client, owner, grant_global)
     await _delegate_management(client, owner, sid, manager)
 
     resp = await client.post(
@@ -82,11 +91,11 @@ async def test_manager_cannot_grant_rights_to_self(client, user_factory):
     assert resp.status_code == 403
 
 
-async def test_only_owner_can_delegate_manage_access(client, user_factory):
+async def test_only_owner_can_delegate_manage_access(client, user_factory, grant_global):
     owner = await user_factory()
     manager = await user_factory()
     outsider = await user_factory()
-    sid = owner["personal_storage_id"]
+    sid = await _global_storage(client, owner, grant_global)
     await _delegate_management(client, owner, sid, manager)
 
     resp = await client.post(
@@ -107,3 +116,24 @@ async def test_duplicate_grant_returns_200(client, user_factory):
     assert first.status_code == 201
     again = await client.post(f"/storages/{sid}/access", json=payload, headers=owner["headers"])
     assert again.status_code == 200
+
+
+async def test_personal_storage_allows_only_read_grant(client, user_factory):
+    owner = await user_factory()
+    other = await user_factory()
+    sid = owner["personal_storage_id"]
+
+    write = await client.post(
+        f"/storages/{sid}/access",
+        json={"target_user_id": other["id"], "grant_type": StorageGrantType.STORAGE_WRITE.value},
+        headers=owner["headers"],
+    )
+    assert write.status_code == 400
+    assert write.json()["error_code"] == "invalid_grant"
+
+    read = await client.post(
+        f"/storages/{sid}/access",
+        json={"target_user_id": other["id"], "grant_type": StorageGrantType.STORAGE_READ.value},
+        headers=owner["headers"],
+    )
+    assert read.status_code == 201

@@ -32,6 +32,12 @@ class PermissionDenied(AppError):
     detail = "You do not have permission to perform this action"
 
 
+class InvalidGrant(AppError):
+    status_code = status.HTTP_400_BAD_REQUEST
+    error_code = "invalid_grant"
+    detail = "This grant type is not allowed for this storage"
+
+
 class NotFound(AppError):
     status_code = status.HTTP_404_NOT_FOUND
     error_code = "not_found"

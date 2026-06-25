@@ -3,12 +3,12 @@ import uuid
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, require_global_grant
+from app.api.deps import get_current_user, require_admin
 from app.api.openapi import error_responses
 from app.db.session import get_db
 from app.exceptions import AuthenticationError, Conflict, NotFound, PermissionDenied
 from app.models.access_request import AccessRequest
-from app.models.enums import AccessRequestStatus, GlobalGrantType
+from app.models.enums import AccessRequestStatus
 from app.models.user import User
 from app.schemas.access_request import AccessRequestCreate, AccessRequestRead
 from app.services import access_request_service
@@ -58,7 +58,7 @@ async def create_access_request(
 )
 async def list_access_requests(
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(require_global_grant(GlobalGrantType.CAN_MANAGE_USERS)),
+    admin: User = Depends(require_admin),
 ) -> list[AccessRequestRead]:
     rows = await access_request_service.list_requests(db, status=AccessRequestStatus.PENDING)
     return [_to_read(request, email) for request, email in rows]
@@ -74,7 +74,7 @@ async def list_access_requests(
 async def approve_access_request(
     request_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(require_global_grant(GlobalGrantType.CAN_MANAGE_USERS)),
+    admin: User = Depends(require_admin),
 ) -> AccessRequestRead:
     request = await access_request_service.approve_request(db, request_id, admin)
     return _to_read(request)
@@ -90,7 +90,7 @@ async def approve_access_request(
 async def reject_access_request(
     request_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(require_global_grant(GlobalGrantType.CAN_MANAGE_USERS)),
+    admin: User = Depends(require_admin),
 ) -> AccessRequestRead:
     request = await access_request_service.reject_request(db, request_id, admin)
     return _to_read(request)

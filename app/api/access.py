@@ -9,6 +9,7 @@ from app.db.session import get_db
 from app.exceptions import (
     AuthenticationError,
     GrantNotFound,
+    InvalidGrant,
     NotFound,
     PermissionDenied,
     StorageNotFound,
@@ -28,10 +29,13 @@ router = APIRouter(prefix="/storages/{storage_id}/access", tags=["access"])
     summary="Выдать доступ к хранилищу",
     description=(
         "Выдаёт пользователю (по UUID) право на хранилище. Требуется право STORAGE_MANAGE_ACCESS. "
+        "Для личного хранилища можно выдать только право STORAGE_READ (чтение и скачивание). "
         "Если такое право уже выдано, возвращается имеющееся со статусом 200."
     ),
     responses={
-        **error_responses(AuthenticationError, PermissionDenied, StorageNotFound, NotFound),
+        **error_responses(
+            AuthenticationError, InvalidGrant, PermissionDenied, StorageNotFound, NotFound
+        ),
         200: {"model": GrantRead, "description": "Право уже было выдано, возвращается имеющееся"},
     },
 )
