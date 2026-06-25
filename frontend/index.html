@@ -195,7 +195,7 @@
   <section id="welcome" class="card hero hidden">
     <img class="hero-logo" src="/static/logo.png" alt="">
     <h3>Надёжное хранилище ваших файлов</h3>
-    <p class="sub">Личные и общие хранилища, гибкие ограничения, управление доступом и временные ссылки на файлы — в одном спокойном интерфейсе.</p>
+    <p class="sub">Личные и общие хранилища, гибкие ограничения, управление доступом и временные ссылки на файлы.</p>
     <div class="actions-row">
       <button onclick="goto('loginScreen')">У меня есть аккаунт</button>
       <button class="ghost" onclick="goto('registerScreen')">Создать аккаунт</button>
@@ -229,7 +229,7 @@
   <section id="dashboard" class="hidden">
     <div class="card">
       <h3 id="hello"></h3>
-      <div class="sub">Ваш идентификатор — передайте его владельцу хранилища, чтобы он выдал вам доступ.</div>
+      <div class="sub">Ваш идентификатор. Передайте его владельцу хранилища, чтобы он выдал вам доступ.</div>
       <div class="idline"><code id="myId"></code><button class="link" onclick="copyText(state.me.id)">Скопировать</button></div>
     </div>
 
@@ -289,8 +289,8 @@
         <div class="field"><label>Максимальный размер хранилища, байт</label><input id="pStore" type="number"></div>
       </div>
       <div class="grid" style="margin-top:14px;">
-        <div class="field"><label>Разрешённые типы (через запятую, пусто — любые)</label><input id="pMime" placeholder="image/png, application/pdf"></div>
-        <div class="field"><label>Разрешённые расширения (через запятую, пусто — любые)</label><input id="pExt" placeholder=".png, .pdf"></div>
+        <div class="field"><label>Разрешённые типы (через запятую, пусто = любые)</label><input id="pMime" placeholder="image/png, application/pdf"></div>
+        <div class="field"><label>Разрешённые расширения (через запятую, пусто = любые)</label><input id="pExt" placeholder=".png, .pdf"></div>
       </div>
       <div class="actions-row"><button onclick="savePolicy(this)">Сохранить</button></div>
     </div>
@@ -511,7 +511,7 @@ async function openStorage(id) {
     $("pExt").value = (p.allowed_extensions || []).join(", ");
     const mg = await api("/storages/" + id + "/my-grants");
     $("stRole").textContent = mg.is_owner
-      ? "Ваша роль: владелец — полный доступ"
+      ? "Ваша роль: владелец (полный доступ)"
       : "Ваши права: " + (mg.grants.join(", ") || "—");
     tab("Files");
     goto("storageScreen");

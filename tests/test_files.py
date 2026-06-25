@@ -6,7 +6,7 @@ from tests.helpers import PNG_1X1, TEXT_CONTENT, upload_files
 
 
 def _storage_dir(storage_id: str) -> str:
-    return os.path.join(settings.STORAGE_ROOT_PATH, storage_id)
+    return os.path.join(settings.STORAGE_ROOT_PATH, "personal", storage_id)
 
 
 async def test_upload_and_download_roundtrip(client, user_factory):

@@ -42,9 +42,10 @@ async def upload_file(
     upload: UploadFile,
     uploader: User,
 ) -> File:
-    policy = await storage_service.get_storage_policy(db, storage_id)
-    if policy is None:
+    storage = await storage_service.get_storage(db, storage_id)
+    if storage is None or storage.policy is None:
         raise StorageQuotaExceeded("Storage has no policy configured")
+    policy = storage.policy
 
     buffer = bytearray()
     total = 0
@@ -79,7 +80,7 @@ async def upload_file(
 
     file_id = uuid.uuid4()
     ext = os.path.splitext(upload.filename or "")[1]
-    relative_path = f"{storage_id}/{file_id}{ext}"
+    relative_path = f"{storage.type.value}/{storage_id}/{file_id}{ext}"
     absolute_path = _storage_root() / relative_path
     absolute_path.parent.mkdir(parents=True, exist_ok=True)
     absolute_path.write_bytes(bytes(buffer))
