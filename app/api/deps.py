@@ -9,7 +9,7 @@ from app.db.session import get_db
 from app.exceptions import AuthenticationError, PermissionDenied, StorageNotFound
 from app.models.enums import GlobalGrantType, StorageGrantType
 from app.models.user import User
-from app.services import grant_service, storage_service
+from app.services import auth_service, grant_service, storage_service
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
@@ -30,7 +30,7 @@ async def get_current_user(
     except ValueError:
         raise AuthenticationError("Invalid token subject")
 
-    user = await db.get(User, user_id)
+    user = await auth_service.get_user_by_id(db, user_id)
     if user is None:
         raise AuthenticationError("User no longer exists")
     return user
