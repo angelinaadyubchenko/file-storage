@@ -1,7 +1,7 @@
 # File Storage Service
 
 - **Развёрнутый сервис:** https://201.51.7.237.nip.io
-- **Swagger (документация API):** https://201.51.7.237.nip.io/docs
+- **Swagger:** https://201.51.7.237.nip.io/docs
 
 ## Что умеет
 
@@ -49,7 +49,7 @@ tests/           # pytest + httpx
 ## Запуск локально (Docker)
 
 ```bash
-cp .env.example .env          # при желании поправьте SECRET_KEY и т.д.
+cp .env.example .env          
 docker-compose up --build
 ```
 
