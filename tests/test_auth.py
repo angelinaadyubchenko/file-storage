@@ -1,17 +1,17 @@
 import pytest
 
 
-async def test_register_creates_user_and_personal_storage(client, user_factory):
-    user = await user_factory()
+async def test_register_creates_only_account(client):
+    email = "fresh@example.com"
+    reg = await client.post("/auth/register", json={"email": email, "password": "password123"})
+    assert reg.status_code == 201
 
-    resp = await client.get("/storages", headers=user["headers"])
+    login = await client.post("/auth/login", json={"email": email, "password": "password123"})
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    resp = await client.get("/storages", headers=headers)
     assert resp.status_code == 200
-    storages = resp.json()
-    personal = [s for s in storages if s["type"] == "personal"]
-    assert len(personal) == 1
-    assert personal[0]["owner_id"] == user["id"]
-    assert personal[0]["policy"]["max_file_size"] > 0
-    assert personal[0]["policy"]["allowed_mime_types"] is None
+    assert resp.json() == []
 
 
 async def test_register_duplicate_email_conflict(client):

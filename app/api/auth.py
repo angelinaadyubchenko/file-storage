@@ -5,9 +5,11 @@ from app.api.deps import get_current_user
 from app.api.openapi import error_responses
 from app.db.session import get_db
 from app.exceptions import AuthenticationError, EmailAlreadyRegistered, InvalidCredentials
+from app.models.enums import GlobalGrantType
 from app.models.user import User
+from app.schemas.access_request import MeAccess
 from app.schemas.user import Token, UserCreate, UserLogin, UserRead
-from app.services import auth_service
+from app.services import access_request_service, auth_service, grant_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -18,8 +20,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
     status_code=status.HTTP_201_CREATED,
     summary="Регистрация пользователя",
     description=(
-        "Создаёт нового пользователя и автоматически его личное хранилище "
-        "с политикой по умолчанию. Email должен быть уникальным, пароль — от 6 символов."
+        "Создаёт новый аккаунт. Хранилища пользователь создаёт сам после входа "
+        "(POST /storages). Email должен быть уникальным, пароль — от 6 символов."
     ),
     responses=error_responses(EmailAlreadyRegistered),
 )
@@ -52,3 +54,33 @@ async def login(payload: UserLogin, db: AsyncSession = Depends(get_db)) -> Token
 )
 async def me(current_user: User = Depends(get_current_user)) -> UserRead:
     return current_user
+
+
+@router.get(
+    "/me/access",
+    response_model=MeAccess,
+    summary="Права текущего пользователя",
+    description=(
+        "Возвращает флаги: может ли пользователь создавать глобальные хранилища, "
+        "является ли админом (CAN_MANAGE_USERS) и есть ли у него ожидающая заявка."
+    ),
+    responses=error_responses(AuthenticationError),
+)
+async def my_access(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> MeAccess:
+    can_create = await grant_service.has_global_grant(
+        db, user_id=current_user.id, grant_type=GlobalGrantType.CAN_CREATE_GLOBAL_STORAGE
+    )
+    can_manage = await grant_service.has_global_grant(
+        db, user_id=current_user.id, grant_type=GlobalGrantType.CAN_MANAGE_USERS
+    )
+    pending = await access_request_service.get_pending_request(
+        db, current_user.id, GlobalGrantType.CAN_CREATE_GLOBAL_STORAGE
+    )
+    return MeAccess(
+        can_create_global_storage=can_create,
+        can_manage_users=can_manage,
+        pending_request=pending is not None,
+    )

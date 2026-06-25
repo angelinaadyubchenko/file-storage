@@ -3,11 +3,11 @@ import uuid
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, require_global_grant, require_storage_grant
+from app.api.deps import get_current_user, require_storage_grant
 from app.api.openapi import error_responses
 from app.db.session import get_db
 from app.exceptions import AuthenticationError, PermissionDenied, StorageNotFound
-from app.models.enums import GlobalGrantType, StorageGrantType
+from app.models.enums import StorageGrantType
 from app.models.user import User
 from app.schemas.storage import (
     StorageCreate,
@@ -32,19 +32,20 @@ def _to_read(storage, used_bytes: int | None = None) -> StorageRead:
     "",
     response_model=StorageRead,
     status_code=status.HTTP_201_CREATED,
-    summary="Создать глобальное хранилище",
+    summary="Создать хранилище (личное или глобальное)",
     description=(
-        "Создаёт глобальное хранилище. Доступно только пользователям с глобальным "
-        "правом CAN_CREATE_GLOBAL_STORAGE."
+        "Создаёт хранилище. Тип задаётся в поле type: personal — может создать любой "
+        "авторизованный пользователь; global — только при наличии права "
+        "CAN_CREATE_GLOBAL_STORAGE (иначе 403)."
     ),
     responses=error_responses(AuthenticationError, PermissionDenied),
 )
 async def create_storage(
     payload: StorageCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_global_grant(GlobalGrantType.CAN_CREATE_GLOBAL_STORAGE)),
+    current_user: User = Depends(get_current_user),
 ) -> StorageRead:
-    storage = await storage_service.create_global_storage(db, payload, owner=current_user)
+    storage = await storage_service.create_storage(db, payload, owner=current_user)
     return _to_read(storage, used_bytes=0)
 
 

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import access, admin, auth, files, shared, storages
+from app.api import access, admin, auth, files, requests, shared, storages
 from app.core.logging_config import configure_logging
 from app.exceptions import register_exception_handlers
 
@@ -29,6 +29,7 @@ def create_app() -> FastAPI:
     app.include_router(files.router)
     app.include_router(shared.router)
     app.include_router(admin.router)
+    app.include_router(requests.router)
 
     app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 

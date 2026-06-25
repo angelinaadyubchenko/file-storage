@@ -48,12 +48,14 @@ class StorageCreate(BaseModel):
         json_schema_extra={
             "example": {
                 "name": "Документы команды",
+                "type": "global",
                 "policy": {"max_file_size": 52428800, "allowed_extensions": [".pdf", ".docx"]},
             }
         }
     )
 
     name: str = Field(min_length=1, max_length=255)
+    type: StorageType
     policy: StoragePolicyUpdate | None = None
 
 

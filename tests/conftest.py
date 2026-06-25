@@ -78,15 +78,19 @@ def user_factory(client):
         token = login.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
-        storages = await client.get("/storages", headers=headers)
-        personal = next(s for s in storages.json() if s["type"] == "personal")
+        created = await client.post(
+            "/storages",
+            json={"name": "Personal", "type": "personal"},
+            headers=headers,
+        )
+        assert created.status_code == 201, created.text
 
         return {
             "id": user_id,
             "email": email,
             "password": password,
             "headers": headers,
-            "personal_storage_id": personal["id"],
+            "personal_storage_id": created.json()["id"],
         }
 
     return make_user

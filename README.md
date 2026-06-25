@@ -5,11 +5,12 @@
 
 ## Что умеет
 
-- Регистрация / логин по JWT. При регистрации пользователю автоматически
-  создаётся **личное хранилище** с дефолтной политикой (100 MB на файл, 1 GB
-  всего, любые MIME-типы).
-- **Хранилища** двух типов: `personal` (по одному на пользователя) и `global`
-  (создаётся обладателями глобального гранта `CAN_CREATE_GLOBAL_STORAGE`).
+- Регистрация / логин по JWT (регистрация создаёт только аккаунт).
+- **Хранилища** двух типов, тип выбирается при создании (`POST /storages`, поле
+  `type`): `personal` — может создать любой пользователь; `global` — нужно
+  глобальное право `CAN_CREATE_GLOBAL_STORAGE`.
+- **Заявки на права**: пользователь запрашивает право на создание глобальных
+  хранилищ через сайт, администратор (`CAN_MANAGE_USERS`) одобряет или отклоняет.
 - **Политики хранилища**: лимит размера файла, общий лимит хранилища, белые
   списки MIME-типов и расширений.
 - **Загрузка файлов** с потоковой проверкой размера, определением MIME-типа по
@@ -130,7 +131,7 @@ curl -X DELETE http://localhost:8000/files/$FILE_ID/share/$SHARE_TOKEN \
 | `POST /auth/register` | регистрация + личное хранилище | — |
 | `POST /auth/login` | получить JWT | — |
 | `GET /storages` | доступные хранилища | авторизация |
-| `POST /storages` | создать global-хранилище | `CAN_CREATE_GLOBAL_STORAGE` |
+| `POST /storages` | создать хранилище (личное/глобальное) | personal — любой; global — `CAN_CREATE_GLOBAL_STORAGE` |
 | `GET /storages/{id}` | инфо + занятость | `STORAGE_READ` / владелец |
 | `PUT /storages/{id}/policy` | обновить политику | `STORAGE_MANAGE_ACCESS` / владелец |
 | `POST /storages/{id}/files` | загрузить файл | `STORAGE_WRITE` / владелец |
@@ -142,6 +143,10 @@ curl -X DELETE http://localhost:8000/files/$FILE_ID/share/$SHARE_TOKEN \
 | `POST /files/{id}/share` | создать ссылку | `STORAGE_MANAGE_ACCESS` / владелец |
 | `GET /shared/{token}` | публичное скачивание | — |
 | `DELETE /files/{id}/share/{token}` | отозвать ссылку | `STORAGE_MANAGE_ACCESS` / владелец |
+| `POST /access-requests` | запросить право | авторизация |
+| `GET /admin/access-requests` | список заявок | `CAN_MANAGE_USERS` |
+| `POST /admin/access-requests/{id}/approve` | одобрить заявку | `CAN_MANAGE_USERS` |
+| `POST /admin/access-requests/{id}/reject` | отклонить заявку | `CAN_MANAGE_USERS` |
 
 ## Очистка soft-deleted файлов
 

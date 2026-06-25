@@ -3,10 +3,19 @@ from app.models.enums import GlobalGrantType
 from tests.helpers import TEXT_CONTENT, upload_files
 
 
+async def test_create_personal_storage_any_user(client, user_factory):
+    user = await user_factory()
+    resp = await client.post(
+        "/storages", json={"name": "My files", "type": "personal"}, headers=user["headers"]
+    )
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["type"] == "personal"
+
+
 async def test_create_global_storage_requires_grant(client, user_factory):
     user = await user_factory()
     resp = await client.post(
-        "/storages", json={"name": "Shared"}, headers=user["headers"]
+        "/storages", json={"name": "Shared", "type": "global"}, headers=user["headers"]
     )
     assert resp.status_code == 403
     assert resp.json()["error_code"] == "permission_denied"
@@ -18,7 +27,11 @@ async def test_create_global_storage_with_grant(client, user_factory, grant_glob
 
     resp = await client.post(
         "/storages",
-        json={"name": "Shared", "policy": {"max_file_size": 1000, "max_storage_size": 5000}},
+        json={
+            "name": "Shared",
+            "type": "global",
+            "policy": {"max_file_size": 1000, "max_storage_size": 5000},
+        },
         headers=user["headers"],
     )
     assert resp.status_code == 201, resp.text

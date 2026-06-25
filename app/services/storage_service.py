@@ -5,13 +5,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
-from app.exceptions import StorageNotFound
-from app.models.enums import StorageType
+from app.exceptions import PermissionDenied, StorageNotFound
+from app.models.enums import GlobalGrantType, StorageType
 from app.models.file import File
 from app.models.grant import StorageGrant
 from app.models.storage import Storage, StoragePolicy
 from app.models.user import User
 from app.schemas.storage import StorageCreate, StoragePolicyUpdate
+from app.services import grant_service
 
 
 async def get_storage(db: AsyncSession, storage_id: uuid.UUID) -> Storage | None:
@@ -48,10 +49,15 @@ async def lock_storage(db: AsyncSession, storage_id: uuid.UUID) -> None:
     await db.execute(select(Storage.id).where(Storage.id == storage_id).with_for_update())
 
 
-async def create_global_storage(
+async def create_storage(
     db: AsyncSession, payload: StorageCreate, owner: User
 ) -> Storage:
-    storage = Storage(name=payload.name, type=StorageType.GLOBAL, owner_id=owner.id)
+    if payload.type == StorageType.GLOBAL and not await grant_service.has_global_grant(
+        db, user_id=owner.id, grant_type=GlobalGrantType.CAN_CREATE_GLOBAL_STORAGE
+    ):
+        raise PermissionDenied("Missing required global grant: CAN_CREATE_GLOBAL_STORAGE")
+
+    storage = Storage(name=payload.name, type=payload.type, owner_id=owner.id)
     db.add(storage)
     await db.flush()
 

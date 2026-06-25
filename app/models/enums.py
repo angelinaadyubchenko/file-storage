@@ -19,3 +19,10 @@ class StorageGrantType(str, enum.Enum):
     STORAGE_WRITE = "STORAGE_WRITE"
     STORAGE_DELETE = "STORAGE_DELETE"
     STORAGE_MANAGE_ACCESS = "STORAGE_MANAGE_ACCESS"
+
+
+class AccessRequestStatus(str, enum.Enum):
+
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"

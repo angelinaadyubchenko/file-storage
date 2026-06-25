@@ -6,8 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.security import create_access_token, hash_password, verify_password
 from app.exceptions import EmailAlreadyRegistered, InvalidCredentials
-from app.models.enums import StorageType
-from app.models.storage import Storage, StoragePolicy
 from app.models.user import User
 
 
@@ -26,21 +24,6 @@ async def register_user(db: AsyncSession, email: str, password: str) -> User:
 
     user = User(email=email, password_hash=hash_password(password))
     db.add(user)
-    await db.flush()
-
-    storage = Storage(name="Personal storage", type=StorageType.PERSONAL, owner_id=user.id)
-    db.add(storage)
-    await db.flush()
-
-    policy = StoragePolicy(
-        storage_id=storage.id,
-        max_file_size=settings.DEFAULT_MAX_FILE_SIZE,
-        max_storage_size=settings.DEFAULT_MAX_STORAGE_SIZE,
-        allowed_mime_types=None,
-        allowed_extensions=None,
-    )
-    db.add(policy)
-
     await db.commit()
     await db.refresh(user)
     return user

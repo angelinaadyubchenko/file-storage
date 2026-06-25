@@ -240,14 +240,37 @@
     </div>
 
     <div class="card">
-      <div class="card-head"><h2>Создать общее хранилище</h2></div>
+      <div class="card-head"><h2>Создать хранилище</h2></div>
       <div class="grid">
         <div class="field"><label>Название</label><input id="gName" placeholder="Например, Команда маркетинга"></div>
+        <div class="field"><label>Тип</label>
+          <select id="gType" onchange="renderCreateHint()">
+            <option value="personal">Личное</option>
+            <option value="global">Общее (глобальное)</option>
+          </select>
+        </div>
         <div class="field"><label>Лимит файла, байт</label><input id="gFile" type="number" placeholder="10485760"></div>
         <div class="field"><label>Лимит хранилища, байт</label><input id="gStore" type="number" placeholder="104857600"></div>
       </div>
-      <div class="actions-row"><button onclick="createGlobal(this)">Создать</button></div>
-      <div class="sub" style="margin-top:10px;">Требуется системное право на создание общих хранилищ.</div>
+      <div class="actions-row"><button onclick="createStorage(this)">Создать</button></div>
+      <div class="sub" id="gHint" style="margin-top:10px;">Личное хранилище может создать любой. Для общего нужно право на создание общих хранилищ.</div>
+    </div>
+
+    <div id="requestCard" class="card hidden">
+      <div class="card-head"><h2>Право на создание общих хранилищ</h2></div>
+      <div class="sub" id="requestStatus"></div>
+      <div class="actions-row" style="margin-top:12px;"><button id="requestBtn" onclick="requestAccess(this)">Запросить право</button></div>
+    </div>
+
+    <div id="adminCard" class="card hidden">
+      <div class="card-head"><h2>Заявки на права</h2></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Пользователь</th><th>Право</th><th></th></tr></thead>
+          <tbody id="requestsBody"></tbody>
+        </table>
+      </div>
+      <div id="requestsEmpty" class="empty hidden">Заявок нет.</div>
     </div>
   </section>
 
@@ -335,7 +358,7 @@
 
 <script>
 const $ = (id) => document.getElementById(id);
-const state = { token: localStorage.getItem("token") || null, me: null, storage: null };
+const state = { token: localStorage.getItem("token") || null, me: null, storage: null, access: null };
 
 let pending = 0;
 function setBusy(on) { pending += on ? 1 : -1; if (pending < 0) pending = 0; $("topbar").classList.toggle("active", pending > 0); }
@@ -477,22 +500,87 @@ async function showDashboard() {
     div.innerHTML = `<div><div class="si-name">${escapeHtml(s.name)}</div><div class="si-sub">${typeLabel(s.type)}</div></div><span class="chev">→</span>`;
     list.appendChild(div);
   }
+  state.access = await api("/auth/me/access");
+  renderAccess();
+  renderCreateHint();
   goto("dashboard");
 }
 
-async function createGlobal(btn) {
+function renderCreateHint() {
+  const t = $("gType").value;
+  $("gHint").textContent = t === "global"
+    ? "Для общего (глобального) хранилища нужно право на создание общих хранилищ."
+    : "Личное хранилище может создать любой пользователь.";
+}
+
+async function createStorage(btn) {
   const name = $("gName").value.trim();
   if (!name) { toast("Введите название", "err"); return; }
+  const type = $("gType").value;
   const policy = {};
   if ($("gFile").value) policy.max_file_size = Number($("gFile").value);
   if ($("gStore").value) policy.max_storage_size = Number($("gStore").value);
-  const payload = { name };
+  const payload = { name, type };
   if (Object.keys(policy).length) payload.policy = policy;
   await action(btn, async () => {
     await api("/storages", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     $("gName").value = ""; $("gFile").value = ""; $("gStore").value = "";
-    toast("Общее хранилище создано", "ok");
+    toast(type === "global" ? "Общее хранилище создано" : "Личное хранилище создано", "ok");
     await showDashboard();
+  });
+}
+
+function renderAccess() {
+  const a = state.access || {};
+  const reqCard = $("requestCard");
+  if (a.can_create_global_storage) {
+    reqCard.classList.add("hidden");
+  } else {
+    reqCard.classList.remove("hidden");
+    const btn = $("requestBtn");
+    if (a.pending_request) {
+      $("requestStatus").textContent = "Ваша заявка на рассмотрении у администратора.";
+      btn.disabled = true; btn.textContent = "Заявка отправлена";
+    } else {
+      $("requestStatus").textContent = "Чтобы создавать общие (глобальные) хранилища, запросите право у администратора.";
+      btn.disabled = false; btn.textContent = "Запросить право";
+    }
+  }
+  $("adminCard").classList.toggle("hidden", !a.can_manage_users);
+  if (a.can_manage_users) loadAdminRequests();
+}
+
+async function requestAccess(btn) {
+  await action(btn, async () => {
+    await api("/access-requests", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    toast("Заявка отправлена", "ok");
+    await showDashboard();
+  });
+}
+
+async function loadAdminRequests() {
+  const rows = await api("/admin/access-requests");
+  const body = $("requestsBody");
+  body.innerHTML = "";
+  $("requestsEmpty").classList.toggle("hidden", rows.length > 0);
+  for (const r of rows) {
+    const tr = document.createElement("tr");
+    const tdUser = document.createElement("td"); tdUser.textContent = r.user_email || r.user_id;
+    const tdGrant = document.createElement("td"); tdGrant.textContent = r.grant_type;
+    const tdAct = document.createElement("td"); tdAct.className = "row-actions";
+    const ok = mkBtn("Одобрить", ""); ok.onclick = () => decideRequest(r.id, "approve", ok);
+    const no = mkBtn("Отклонить", "ghost"); no.onclick = () => decideRequest(r.id, "reject", no);
+    tdAct.appendChild(ok); tdAct.appendChild(no);
+    tr.appendChild(tdUser); tr.appendChild(tdGrant); tr.appendChild(tdAct);
+    body.appendChild(tr);
+  }
+}
+
+async function decideRequest(id, decision, btn) {
+  await action(btn, async () => {
+    await api("/admin/access-requests/" + id + "/" + decision, { method: "POST" });
+    toast(decision === "approve" ? "Заявка одобрена" : "Заявка отклонена", "ok");
+    await loadAdminRequests();
   });
 }
 

@@ -1,4 +1,6 @@
+from app.models.access_request import AccessRequest
 from app.models.enums import (
+    AccessRequestStatus,
     GlobalGrantType,
     StorageGrantType,
     StorageType,
@@ -17,7 +19,9 @@ __all__ = [
     "StorageGrant",
     "File",
     "FileShareToken",
+    "AccessRequest",
     "StorageType",
     "GlobalGrantType",
     "StorageGrantType",
+    "AccessRequestStatus",
 ]
