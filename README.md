@@ -1,7 +1,7 @@
 # File Storage Service
 
 - **Развёрнутый сервис:** https://201.51.7.237.nip.io
-- **Swagger:** https://201.51.7.237.nip.io/docs
+  
 
 ## Что умеет
 
