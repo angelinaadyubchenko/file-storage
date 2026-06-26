@@ -18,8 +18,8 @@ class User(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    storages: Mapped[list["Storage"]] = relationship(  # noqa: F821
+    storages: Mapped[list["Storage"]] = relationship(  
         back_populates="owner", foreign_keys="Storage.owner_id"
     )
-    global_grants: Mapped[list["GlobalGrant"]] = relationship(back_populates="user")  # noqa: F821
-    storage_grants: Mapped[list["StorageGrant"]] = relationship(back_populates="user")  # noqa: F821
+    global_grants: Mapped[list["GlobalGrant"]] = relationship(back_populates="user")  
+    storage_grants: Mapped[list["StorageGrant"]] = relationship(back_populates="user") 

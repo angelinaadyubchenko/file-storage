@@ -54,10 +54,6 @@ async def grant_storage_access(
     if storage.type == StorageType.PERSONAL and grant_type != StorageGrantType.STORAGE_READ:
         raise InvalidGrant("A personal storage can only be shared with read access")
 
-    # Owner has full authority. A non-owner with STORAGE_MANAGE_ACCESS may invite
-    # others as readers/writers/deleters, but must not be able to escalate: only
-    # the owner can hand out STORAGE_MANAGE_ACCESS, and a manager cannot grant
-    # rights to themselves.
     if storage.owner_id != granted_by.id:
         if grant_type == StorageGrantType.STORAGE_MANAGE_ACCESS:
             raise PermissionDenied("Only the storage owner can delegate STORAGE_MANAGE_ACCESS")
@@ -124,9 +120,6 @@ async def revoke_storage_access(
     if storage is None:
         raise StorageNotFound()
 
-    # Same asymmetry as granting: a non-owner manager may take away ordinary
-    # rights, but revoking management access (or wiping every grant at once) is
-    # reserved for the owner.
     if storage.owner_id != revoked_by.id and (
         grant_type is None or grant_type == StorageGrantType.STORAGE_MANAGE_ACCESS
     ):

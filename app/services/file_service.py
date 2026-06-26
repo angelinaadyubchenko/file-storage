@@ -55,7 +55,6 @@ async def upload_file(
             break
         total += len(chunk)
         if total > policy.max_file_size:
-            buffer.clear()
             await upload.close()
             raise FileTooLarge(
                 f"File exceeds the per-file limit of {policy.max_file_size} bytes"

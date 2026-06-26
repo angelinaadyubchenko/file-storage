@@ -26,7 +26,7 @@ class GlobalGrant(Base):
         nullable=False,
     )
 
-    user: Mapped["User"] = relationship(back_populates="global_grants")  # noqa: F821
+    user: Mapped["User"] = relationship(back_populates="global_grants")  
 
 
 class StorageGrant(Base):
@@ -51,5 +51,5 @@ class StorageGrant(Base):
         nullable=False,
     )
 
-    user: Mapped["User"] = relationship(back_populates="storage_grants")  # noqa: F821
-    storage: Mapped["Storage"] = relationship(back_populates="grants")  # noqa: F821
+    user: Mapped["User"] = relationship(back_populates="storage_grants") 
+    storage: Mapped["Storage"] = relationship(back_populates="grants")  

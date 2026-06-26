@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.core.security import decode_access_token
 from app.db.session import get_db
 from app.exceptions import AuthenticationError, PermissionDenied, StorageNotFound
-from app.models.enums import GlobalGrantType, StorageGrantType
+from app.models.enums import StorageGrantType
 from app.models.user import User
 from app.services import auth_service, grant_service, storage_service
 
@@ -68,21 +68,6 @@ def require_storage_grant(grant_type: StorageGrantType):
         db: AsyncSession = Depends(get_db),
     ) -> User:
         await assert_storage_access(db, current_user, storage_id, grant_type)
-        return current_user
-
-    return dependency
-
-
-def require_global_grant(grant_type: GlobalGrantType):
-
-    async def dependency(
-        current_user: User = Depends(get_current_user),
-        db: AsyncSession = Depends(get_db),
-    ) -> User:
-        if not await grant_service.has_global_grant(
-            db, user_id=current_user.id, grant_type=grant_type
-        ):
-            raise PermissionDenied(f"Missing required global grant: {grant_type.value}")
         return current_user
 
     return dependency

@@ -1,6 +1,3 @@
-import pytest
-
-
 async def test_register_creates_only_account(client):
     email = "fresh@example.com"
     reg = await client.post("/auth/register", json={"email": email, "password": "password123"})

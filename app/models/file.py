@@ -27,5 +27,5 @@ class File(Base):
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    storage: Mapped["Storage"] = relationship(back_populates="files")  # noqa: F821
-    share_tokens: Mapped[list["FileShareToken"]] = relationship(back_populates="file")  # noqa: F821
+    storage: Mapped["Storage"] = relationship(back_populates="files")  
+    share_tokens: Mapped[list["FileShareToken"]] = relationship(back_populates="file") 

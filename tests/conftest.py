@@ -2,7 +2,6 @@ import os
 import uuid
 from pathlib import Path
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -22,7 +21,7 @@ settings.STORAGE_ROOT_PATH = str(_TEST_STORAGE_DIR)
 
 from app.db.base import Base  # noqa: E402
 from app.db.session import get_db  # noqa: E402
-import app.models  # noqa: E402,F401  (register all tables on Base.metadata)
+import app.models  # noqa: E402,F401
 from app.main import app  # noqa: E402
 from app.models.enums import GlobalGrantType  # noqa: E402
 from app.services import grant_service  # noqa: E402

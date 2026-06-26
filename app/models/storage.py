@@ -26,12 +26,12 @@ class Storage(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    owner: Mapped["User"] = relationship(back_populates="storages", foreign_keys=[owner_id])  # noqa: F821
+    owner: Mapped["User"] = relationship(back_populates="storages", foreign_keys=[owner_id])  
     policy: Mapped["StoragePolicy"] = relationship(
         back_populates="storage", uselist=False, cascade="all, delete-orphan"
     )
-    files: Mapped[list["File"]] = relationship(back_populates="storage")  # noqa: F821
-    grants: Mapped[list["StorageGrant"]] = relationship(  # noqa: F821
+    files: Mapped[list["File"]] = relationship(back_populates="storage")  
+    grants: Mapped[list["StorageGrant"]] = relationship(  
         back_populates="storage", cascade="all, delete-orphan"
     )
 

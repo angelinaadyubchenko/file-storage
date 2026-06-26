@@ -27,4 +27,4 @@ class FileShareToken(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    file: Mapped["File"] = relationship(back_populates="share_tokens")  # noqa: F821
+    file: Mapped["File"] = relationship(back_populates="share_tokens")  

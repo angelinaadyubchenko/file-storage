@@ -26,7 +26,7 @@ async def cleanup_deleted_files(retention_days: int | None = None) -> int:
             path = absolute_path_for(file_row)
             try:
                 path.unlink(missing_ok=True)
-            except OSError as exc:  
+            except OSError as exc:
                 audit.warning("cleanup_failed file_id=%s path=%s err=%s", file_row.id, path, exc)
                 continue
             await db.delete(file_row)
@@ -42,4 +42,4 @@ async def cleanup_deleted_files(retention_days: int | None = None) -> int:
 if __name__ == "__main__":
     configure_logging()
     count = asyncio.run(cleanup_deleted_files())
-    print(f"Purged {count} file(s).")
+    print(f"Purged {count} files.")

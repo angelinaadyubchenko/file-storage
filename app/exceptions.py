@@ -76,11 +76,6 @@ class EmailAlreadyRegistered(Conflict):
     detail = "A user with this email already exists"
 
 
-class GrantAlreadyExists(Conflict):
-    error_code = "grant_already_exists"
-    detail = "This grant already exists"
-
-
 class FileTooLarge(AppError):
     status_code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
     error_code = "file_too_large"
